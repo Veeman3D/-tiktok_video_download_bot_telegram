@@ -2,7 +2,6 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 import requests
-import json
 from conf import *
 
 #ссылки и ключь внешнего api
@@ -38,30 +37,35 @@ async def url(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             #не удалось загрузить видео, код -1
             if response['code'] == -1:
-                print(response)
                 await context.bot.send_message(chat_id=update.effective_chat.id, text='Не удалось загрузить видео. Пожалуйста, проверте ссылку.')
+                print('Не удалось ззагрузить видео. Сообщение пользователя: ' + update.message.text)
 
             #успешно, но видео превышает максимальное значение для загрузки файла
-            elif response['code'] == 0 and int(response['data']['hd_size']) >= 20971520: #20 МБ
+            elif response['code'] == 0 and response['data']['duration'] != 0  and int(response['data']['hd_size']) >= 20971520: #20 МБ
                 await context.bot.send_message(chat_id=update.effective_chat.id, text='Это видео слишком большое для отправки файлом. Но я могу отправить ссылку для скачивания. \nСсылка для скачивания видео: ' + response['data']['hdplay'] )
+                print('Видео загружено через ссылку. Имеет большой размер файла. Сообщение пользователя: ' + update.message.text)
+                
                 
             #успешно, тикток является видеофайлом, имеет длительность видео
             elif response['code'] == 0 and response['data']['duration'] != 0 :
                 await context.bot.send_video(chat_id = update.effective_chat.id, video = response['data']['hdplay'], duration = response['data']['duration'], caption = 'Готово')
+                print('Видео загружено. Сообщение пользователя: ' + update.message.text)
 
             #успешно, но тикток не имеет длительности видео и не является видеофайлом
             elif response['code'] == 0 and response['data']['duration'] == 0 :
                 await context.bot.send_message(chat_id=update.effective_chat.id, text='Упс, похоже в этом TikTok отсутствует видео.')
-
+                print('Отсутствует видео. Сообщение пользователя: ' + update.message.text)
             #другое
             else:
                 await context.bot.send_message(chat_id=update.effective_chat.id, text='Кажется возникли некоторые проблемы. Попробуйте позже.')
+                print('Неизвестная ошибка. Сообщение пользователя: ' + update.message.text)
 
     #Неверный url
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text='Пожалуйста, введите верный url видео. Он должен начинатся на https://www.tiktok.com или https://vt.tiktok.com')
-
-    print('ЗАВЕРШЕНО ---')
+        print('Не верный url. Сообщение пользователя: ' + update.message.text)
+        
+    print('--- ЗАВЕРШЕНО ---')
 
 if __name__ == '__main__':
     
