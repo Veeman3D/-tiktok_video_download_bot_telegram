@@ -16,7 +16,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def url(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     #проверка url
-    if update.message.text.startswith('https://www.tiktok.com') or update.message.text.startswith('https://vt.tiktok.com') :
+    if update.message.text.startswith('https://www.tiktok.com') or update.message.text.startswith('https://vt.tiktok.com') or update.message.text.startswith('https://vm.tiktok.com') :
 
         #отправка ссылок на внешний api и получение файла
         querystring = {"url":update.message.text ,"hd":"1"}
