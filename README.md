@@ -7,4 +7,4 @@
 
 Необходимые библиотеки: python-telegram-bot, requests.
 
-Необходим файл конфигупации conf.py с записанными в нем API_KEY и BOT_TOKEN
+Необходим файл конфигурации conf.py с записанными в нем API_KEY и BOT_TOKEN
