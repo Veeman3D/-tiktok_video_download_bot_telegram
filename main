@@ -1,0 +1,80 @@
+#импорт библиотек
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
+import requests
+import json
+from conf import *
+
+#ссылки и ключь внешнего api
+url_conn = "https://tiktok-video-no-watermark2.p.rapidapi.com/"
+headers = {'x-rapidapi-key': API_KEY, 'x-rapidapi-host': "tiktok-video-no-watermark2.p.rapidapi.com"}
+
+#стартовая функция
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=update.effective_chat.id, text='Привет! Отправь мне ссылку на видео из TikTok, и я скачаю его без водяного знака.')
+
+#Получение url
+async def url(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    #проверка url
+    if update.message.text.startswith('https://www.tiktok.com') or update.message.text.startswith('https://vt.tiktok.com') :
+
+        #отправка ссылок на внешний api и получение файла
+        querystring = {"url":update.message.text ,"hd":"1"}
+        response = requests.get(url_conn, headers=headers, params=querystring)
+
+        #проверка полученого файла
+
+        #фильтр сообщения о блокировке
+        if str(response.json()) == '{\'messages\': \'Sorry, we are unable to provide RapidAPI services to your location. RapidAPI is required to comply with US laws that restrict the use of our services in embargoed countries. If you believe you receiving this message in error, please contact support@rapidapi.com.\'}':
+            print(response.json())
+            await context.bot.send_message(chat_id=update.effective_chat.id, text='Кажется возникли некоторые проблемы. Попробуйте позже.')
+        
+        else:
+            response = response.json()
+            print(response)
+            
+            #проверка файла
+
+            #не удалось загрузить видео, код -1
+            if response['code'] == -1:
+                print(response)
+                await context.bot.send_message(chat_id=update.effective_chat.id, text='Не удалось загрузить видео. Пожалуйста, проверте ссылку.')
+
+            #успешно, но видео превышает максимальное значение для загрузки файла
+            elif response['code'] == 0 and int(response['data']['hd_size']) >= 20971520: #20 МБ
+                await context.bot.send_message(chat_id=update.effective_chat.id, text='Это видео слишком большое для отправки файлом. Но я могу отправить ссылку для скачивания. \nСсылка для скачивания видео: ' + response['data']['hdplay'] )
+                
+            #успешно, тикток является видеофайлом, имеет длительность видео
+            elif response['code'] == 0 and response['data']['duration'] != 0 :
+                await context.bot.send_video(chat_id = update.effective_chat.id, video = response['data']['hdplay'], duration = response['data']['duration'], caption = 'Готово')
+
+            #успешно, но тикток не имеет длительности видео и не является видеофайлом
+            elif response['code'] == 0 and response['data']['duration'] == 0 :
+                await context.bot.send_message(chat_id=update.effective_chat.id, text='Упс, похоже в этом TikTok отсутствует видео.')
+
+            #другое
+            else:
+                await context.bot.send_message(chat_id=update.effective_chat.id, text='Кажется возникли некоторые проблемы. Попробуйте позже.')
+
+    #Неверный url
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text='Пожалуйста, введите верный url видео. Он должен начинатся на https://www.tiktok.com или https://vt.tiktok.com')
+
+    print('ЗАВЕРШЕНО ---')
+
+if __name__ == '__main__':
+    
+    #Создание объекта application
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    #обработчики
+    start_handler = CommandHandler('start', start)
+    url_handler = MessageHandler(filters.Entity('url'), url)
+    
+    #добавление обработчиков в application
+    application.add_handler(start_handler)
+    application.add_handler(url_handler)
+
+
+    application.run_polling()
