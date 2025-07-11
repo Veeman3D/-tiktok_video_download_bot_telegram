@@ -1,6 +1,4 @@
-# -tiktok_video_download_bot_telegram
-
-Простой Telegram бот для загрузки видео из TikTok без вотермарки.
+Простой Telegram бот для загрузки видео из TikTok без водяного знака.
 
 
 Использует внешний api для получения видео: https://tiktok-video-no-watermark2.p.rapidapi.com
